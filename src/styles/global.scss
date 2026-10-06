@@ -1,6 +1,13 @@
 @use "@styles/variables" as *;
 @use "@styles/colors" as *;
 
+@font-face { font-family: "Gilroy"; src: url("../../assets/fonts/Gilroy-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gilroy"; src: url("../../assets/fonts/Gilroy-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gilroy"; src: url("../../assets/fonts/Gilroy-SemiBold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gilroy"; src: url("../../assets/fonts/Gilroy-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+button, input, textarea, select { font-family: inherit; }
+
 * {
   font-weight: 400;
 }
@@ -9,7 +16,7 @@ body {
   box-sizing: border-box;
   border-radius: $border-radius-main;
   margin: 0;
-  font-family: "Montserrat", sans-serif;
+  font-family: "Gilroy", sans-serif;
   font-weight: 400;
   height: 100vh;
 }
@@ -98,7 +105,7 @@ body {
  */
 .run-summary {
   margin: 8px 0 0 0;
-  font-family: "Inter";
+  font-family: "Gilroy";
   font-size: 11px;
   font-weight: 400;
   line-height: 1.4;

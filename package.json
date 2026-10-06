@@ -19,8 +19,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "check:bundle": "node scripts/check-bundle-boundary.mjs",
-    "gate": "npm run typecheck && npm run lint && npm run test:run && npm run build && npm run check:bundle && npm run check:eval && npm run build:prod",
-    "check:eval": "node scripts/check-bundle-eval.mjs"
+    "gate": "npm run typecheck && npm run lint && npm run test:run && npm run build && npm run check:bundle && npm run check:eval && npm run build:prod && npm run build:beta",
+    "check:eval": "node scripts/check-bundle-eval.mjs",
+    "build:beta": "webpack --mode production --env agentsBeta && node scripts/beta-manifest.mjs && node scripts/check-bundle-eval.mjs dist-beta/code.js"
   },
   "browserslist": {
     "production": [

@@ -74,6 +74,6 @@ module.exports = tseslint.config(
     },
   },
   {
-    ignores: ['dist', 'spike', 'eslint.config.js', 'webpack.config.js'],
+    ignores: ['dist-beta', 'dist', 'spike', 'eslint.config.js', 'webpack.config.js'],
   },
 )

@@ -1,3 +1,5 @@
+import { AGENTS_BETA } from "@constants/agents";
+import AgentsController from "./AgentsController";
 import commands from "@constants/commands";
 import {
   API_KEY_NAME,
@@ -55,6 +57,10 @@ const handleIntroMessage = async (response: {
 };
 
 const IntroController = async () => {
+  if (AGENTS_BETA && (figma.command === commands.COMMAND_AGENTS || figma.editorType === "figjam")) {
+    await AgentsController();
+    return;
+  }
   if (figma.command === commands.COMMAND_SUPPORT) {
     routeCommand();
     return;

@@ -164,3 +164,24 @@ Branch per feature, Google TypeScript Style Guide, two approvals from code owner
 `CONTRIBUTING.md` describes this repo: it carries the per-stage gate table and the Vitest
 layout. It used to be generic Picsart-SDK boilerplate referencing `/tests/`, Python and
 Java, and this line used to warn you off it.
+
+## AI Agents / FigJam staff beta
+
+The internal beta extends this plugin with Picsart's existing Agents chat, a live staging agent catalog, separate conversations per agent, explicit canvas attachments, result image placement, and editable FigJam notes. It uses this repository's Picsart OAuth flow and a company-hosted staging gateway. API keys are not accepted for Agents. The beta contains no developer CLI credentials or localhost service dependency.
+
+Use Node 20.19–20.x and run `npm ci` then `npm run gate`. The gate also produces `dist-beta/manifest.json`, `code.js` and the self-contained `ui.html`. Import that manifest into Figma desktop via **Plugins → Development → Import plugin from manifest**. Use **AI Agents** in a Design or FigJam file, then sign in with your own approved Picsart account.
+
+The default production build keeps Agents disabled and preserves the existing public plugin manifest/ID. The beta manifest has a distinct name, enables Figma and FigJam, and omits the public ID. For a later update to an already registered private beta, set `PICSART_FIGMA_BETA_ID` to that beta's assigned Figma ID when building. Never reuse the public ID for the internal beta.
+
+Gilroy Regular, Medium, Semibold and Bold, the official Picsart SVG wordmark, and Aura/Mila portraits are bundled. The Agents theme follows Figma until the user chooses light or dark. Additional agents use initials and come from the authenticated catalog rather than a hardcoded availability list.
+
+### Current release status and limits
+
+- Local typecheck, lint, 562 tests, sandbox evaluation, production build and beta build pass; seven pre-existing tests are skipped. The beta UI is approximately 1.1 MiB, including the bundled fonts and two portraits, within its explicit 1.25 MiB build budget.
+- The staff gateway must be deployed and enabled for each tester before chat works. An unavailable service is shown as an error; there is no simulated chat fallback.
+- Current company OAuth and staging account/credit attribution still require end-to-end acceptance in the installed beta. Source wiring and successful build checks do not establish a live connection.
+- Conversations and pending-task recovery last while this Agents panel remains open. Switching agents preserves each conversation, draft and pending task. Switching accounts clears them. Closing the plugin loses local recovery state; check Picsart before repeating an uncertain submission.
+- Image results can be inserted into both editors. Video/audio and existing Picsart conversation history are not imported. FigJam notes are limited to 5,000 characters and use FigJam's native editable note font; the plugin UI uses Gilroy.
+- Paid submissions are never automatically retried. Interrupted polling resumes the same task. An unknown submission outcome blocks that conversation until the user explicitly acknowledges checking Picsart.
+
+Publish the staff beta only after hosted authentication, two-account isolation, credit attribution, uploads, image placement and native FigJam acceptance are verified. Follow the repository's code-owner review and release process. This is preparation for an internal beta, not a public release.

@@ -1,3 +1,5 @@
+import { AGENTS_BETA } from "@constants/agents";
+import AgentsController from "@controllers/AgentsController";
 /// <reference types="@figma/plugin-typings" />
 import IntroController from "@controllers/IntroController";
 import routeCommand from "@routes/CommandRouter";
@@ -21,6 +23,11 @@ setTimeout(async () => {
   figma.on("selectionchange", () => {
     sendImageSelectionStatus();
   });
+
+  if (AGENTS_BETA && (figma.editorType === "figjam" || !figma.command || figma.command === "AI-AGENTS")) {
+    await AgentsController();
+    return;
+  }
 
   const { credential } = await activeCredential(figma);
 

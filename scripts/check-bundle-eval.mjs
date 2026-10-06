@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-const BUNDLE = "dist/code.js";
+const BUNDLE = process.argv[2] || "dist/code.js";
 
 let source;
 try {

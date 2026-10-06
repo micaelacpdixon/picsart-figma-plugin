@@ -1,3 +1,4 @@
+import { AGENTS_BETA } from "@constants/agents";
 import React, { useState } from "react";
 import useOutsideClick from "@hooks/useOutsideClick";
 import { TabType } from "@app-types/enums";
@@ -100,6 +101,7 @@ const Navbar: React.FC<Props> = ({ gottenKey, tab }) => {
         </div>
         {gottenKey && showMenu && (
           <div ref={ref} className="hamburger-menu-hidden-content">
+            {AGENTS_BETA && <button onClick={() => handleMenuItemClick(TabType.AGENTS)}>AI Agents · beta</button>}
             <span 
               onClick={() => handleMenuItemClick(TabType.ACCOUNT)}
               tabIndex={0}

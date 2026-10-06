@@ -1,4 +1,5 @@
 export enum TabType {
+  AGENTS = "AI Agents",
   TAB_REMOVE_BACKGROUND_INSTANTLY = "Remove Background Instantly",
   REMOVE_BACKGROUND = "Remove BG",
   GENERATE_IMAGE = "Generate Image",

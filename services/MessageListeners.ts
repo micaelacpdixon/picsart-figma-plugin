@@ -1,3 +1,5 @@
+import AgentsController from "../controllers/AgentsController";
+import { TAB_AGENTS } from "@constants/tabs";
 import ImageProcessor from "@services/ImageProcessor";
 import type { BytesFailureReason } from "@app-types/messages";
 import AccountController from "../controllers/AccountController";
@@ -272,6 +274,9 @@ const handleUiMessage = async (figma: PluginAPI, response: IncomingMessage) => {
           const hasCredential = !!(await activeCredential(figma)).credential;
 
           switch (response.tab) {
+            case TAB_AGENTS:
+              await AgentsController();
+              break;
             case TAB_UPSCALE:
               await openPanel({
                 tab: TAB_UPSCALE,

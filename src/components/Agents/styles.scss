@@ -2,6 +2,7 @@
   --ag-bg: #fcfbfe; --ag-panel: #fff; --ag-text: #25212c; --ag-muted: #6e6679; --ag-line: #e8e3ed;
   --ag-tint: #f2e9ff; --ag-accent: #7500d4; --ag-error: #9d2440;
   display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden;
+  padding: 0 16px 12px;
   color: var(--ag-text); background: var(--ag-bg); font-family: Gilroy, sans-serif; font-size: 13px;
   *, *::before, *::after { box-sizing: border-box; }
   button, input, textarea { font: inherit; color: inherit; }
@@ -77,3 +78,5 @@
 }
 .agents-panel .scrollable-content { overflow: hidden; }
 .agents-panel { background: var(--figma-color-bg, #fcfbfe); }
+
+#root:has(.agents) { padding: 0; }

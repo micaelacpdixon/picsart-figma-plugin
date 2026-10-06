@@ -142,12 +142,12 @@ function AgentsSession({ onSignIn, oauth, client: incomingClient }: { onSignIn: 
     <header className="agents-brand"><img src={logo} alt="Picsart" /><span>AI Agents</span><small>STAFF BETA</small>
       <button className="agents-icon" aria-label={`Theme: ${theme}. Change theme`} onClick={() => setTheme(theme === "auto" ? "light" : theme === "light" ? "dark" : "auto")}>{theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐"}</button>
     </header>
-    <div className="agents-toolbar">
+    {oauth && agents.length > 0 && <div className="agents-toolbar">
       <button className="agent-current" onClick={() => setPicker(!picker)} disabled={!agents.length || busy || canvasBusy} aria-expanded={picker} aria-label="Change agent">
         {avatars[selected] && <img src={avatars[selected]} alt="" />}<span><strong>{agent?.name || "Choose an agent"}</strong><small>{agent?.role || "Your creative team, in Figma"}</small></span><span>⌄</span>
       </button>
       <button className="agents-icon" title="New chat" aria-label="New chat" disabled={blocked || canvasBusy || !chat.messages.length} onClick={() => setChats(previous => ({ ...previous, [selected]: emptyChat() }))}>＋</button>
-    </div>
+    </div>}
     {picker ? <div className="agents-picker"><label>Find your creative partner<input autoFocus type="search" placeholder="Search agents or skills" value={search} onChange={e => setSearch(e.target.value)} /></label>
       <div className="agents-options">{filtered.map(a => <button key={a.id} aria-pressed={selected === a.id} onClick={() => { setSelected(a.id); setPicker(false); setNotice(""); }}>
         {avatars[a.id] ? <img src={avatars[a.id]} alt="" /> : <span className="agent-initial">{a.name.slice(0, 1)}</span>}<span><strong>{a.name}</strong><small>{a.role}</small></span>{selected === a.id && <span>✓</span>}

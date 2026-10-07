@@ -126,8 +126,7 @@ describe("openPanel", () => {
     await flush();
 
     const payload = posted.find((msg) => msg.type === TYPE_GET_BALANCE)?.payload;
-    expect(payload).toBe(0);
-    expect(typeof payload).toBe("number");
+    expect(payload).toBeNull(); // Unknown is not a zero-credit account.
     // Not warm, so the next panel open tries again instead of trusting the failure.
     expect(CustomSessionStorage.getInstance().isWarmFor(apiKeyIdentity(KEY))).toBe(false);
   });

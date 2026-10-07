@@ -18,6 +18,8 @@ import {
   TYPE_IMAGE_BYTES_RESULT,
   TYPE_CREDENTIAL,
   TYPE_NOTIFY,
+  TYPE_RESIZE,
+  WIDGET_WIDTH,
   TYPE_PLACEMENT_DONE,
   TYPE_PLACE_EDITED_IMAGES,
   TYPE_REMOVE_KEY,
@@ -73,6 +75,15 @@ describe("handleUiMessage", () => {
     resetUiBridge();
     resetAuthSession();
     vi.restoreAllMocks();
+  });
+
+  describe("panel resize", () => {
+    it.each([[420, 420], [undefined, WIDGET_WIDTH], [9000, WIDGET_WIDTH], ["bad", WIDGET_WIDTH]])("keeps the Agents auth width within bounds (%s)", async (width, expected) => {
+      const { api } = makeFigmaStub(); ready(api);
+      vi.spyOn(api.ui, "resize");
+      await send(api, { type: TYPE_RESIZE, success: true, height: 720, width });
+      expect(api.ui.resize).toHaveBeenCalledWith(expected, 720);
+    });
   });
 
   describe("notifications", () => {

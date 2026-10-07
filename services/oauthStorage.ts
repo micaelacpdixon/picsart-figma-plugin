@@ -11,6 +11,16 @@ export interface OAuthRecord {
     writtenAt: number;
 }
 
+// Figma can reject persistence (for example for an unregistered development
+// manifest). Keep a successful login in this sandbox, never in the UI or logs.
+// Reopening the plugin still requires sign-in, as the existing warning explains.
+let sessionRecords = new WeakMap<PluginAPI, OAuthRecord>();
+let clearedSessions = new WeakSet<PluginAPI>();
+export const resetSessionOAuthRecords = () => {
+    sessionRecords = new WeakMap();
+    clearedSessions = new WeakSet();
+};
+
 const asString = (value: unknown): string | undefined =>
     typeof value === "string" && value ? value : undefined;
 
@@ -41,13 +51,17 @@ const asRecord = (stored: unknown): OAuthRecord | undefined => {
 export const readOAuthRecord = async (
     pluginApi: PluginAPI
 ): Promise<OAuthRecord | undefined> => {
+    if (clearedSessions.has(pluginApi)) return undefined;
+    const temporary = sessionRecords.get(pluginApi);
     try {
         const record = asRecord(await pluginApi.clientStorage.getAsync(OAUTH_RECORD_NAME));
+        if (temporary && (!record || temporary.writtenAt >= record.writtenAt)) return temporary;
+        if (record) sessionRecords.delete(pluginApi);
         if (!record) return undefined;
         return record;
     } catch (error) {
         authLog("failed to read the stored OAuth record:", { error: String(error) });
-        return undefined;
+        return temporary;
     }
 };
 
@@ -63,16 +77,24 @@ export const writeOAuthRecord = async (
 
     try {
         await pluginApi.clientStorage.setAsync(OAUTH_RECORD_NAME, stored);
+        sessionRecords.delete(pluginApi);
+        clearedSessions.delete(pluginApi);
         return stored;
     } catch (error) {
+        sessionRecords.set(pluginApi, stored);
+        clearedSessions.delete(pluginApi);
         authLog("failed to store the OAuth record:", { error: String(error) });
         return undefined;
     }
 };
 
 export const clearOAuthRecord = async (pluginApi: PluginAPI): Promise<boolean> => {
+    sessionRecords.delete(pluginApi);
+    // A failed disk delete must not restore the old account in this session.
+    clearedSessions.add(pluginApi);
     try {
         await pluginApi.clientStorage.deleteAsync(OAUTH_RECORD_NAME);
+        clearedSessions.delete(pluginApi);
         return true;
     } catch (error) {
         authLog("failed to clear the OAuth record:", { error: String(error) });

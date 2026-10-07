@@ -10,10 +10,10 @@ import { TYPE_RESIZE } from "@constants/index";
  * re-run `figma.showUI` with their base height, so nothing needs to undo this
  * on unmount.
  */
-const usePluginHeight = (height: number) => {
+const usePluginHeight = (height: number, width?: number) => {
   useEffect(() => {
-    sendMessageToSandBox(true, "", TYPE_RESIZE, undefined, { height });
-  }, [height]);
+    sendMessageToSandBox(true, "", TYPE_RESIZE, undefined, { height, ...(width ? { width } : {}) });
+  }, [height, width]);
 };
 
 export default usePluginHeight;

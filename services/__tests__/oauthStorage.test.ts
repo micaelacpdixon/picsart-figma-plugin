@@ -6,6 +6,7 @@ import {
   credentialFromRecord,
   isAccessTokenExpired,
   readOAuthRecord,
+  resetSessionOAuthRecords,
   writeOAuthRecord,
   type OAuthRecord,
 } from "../oauthStorage";
@@ -22,7 +23,7 @@ const record = (over: Partial<OAuthRecord> = {}): Omit<OAuthRecord, "writtenAt">
 
 const silenceLog = () => vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); resetSessionOAuthRecords(); });
 
 describe("the two slots are independent (4A')", () => {
   it("does not read the API key when there is no OAuth record", async () => {
@@ -211,5 +212,40 @@ describe("credentialFromRecord", () => {
 
     expect(isAccessTokenExpired(nearly)).toBe(true);
     expect(isAccessTokenExpired({ ...nearly, expiresAt: Date.now() + 600_000 })).toBe(false);
+  });
+});
+
+
+describe("temporary OAuth sessions when Figma storage fails", () => {
+  it("keeps the new account, not an older persisted account, and accepts a newer external rotation", async () => {
+    silenceLog();
+    const { api, clientStorage } = makeFigmaStub({ storageFails: { set: true },
+      clientStorage: { [OAUTH_RECORD_NAME]: { ...record({ accessToken: "old-account" }), writtenAt: 1 } } });
+    await writeOAuthRecord(api, record({ accessToken: "new-account" }));
+    const temporary = await readOAuthRecord(api);
+    expect(temporary?.accessToken).toBe("new-account");
+    clientStorage.set(OAUTH_RECORD_NAME, { ...record({ accessToken: "rotated" }), writtenAt: temporary!.writtenAt + 1 });
+    expect((await readOAuthRecord(api))?.accessToken).toBe("rotated");
+  });
+
+  it("retains a rotated refresh token in memory even when both reads and writes fail", async () => {
+    silenceLog();
+    const { api } = makeFigmaStub({ storageFails: { get: true, set: true } });
+    await writeOAuthRecord(api, record());
+    await writeOAuthRecord(api, record({ accessToken: "access-2", refreshToken: "rt:rotated" }));
+    expect(await readOAuthRecord(api)).toMatchObject({ accessToken: "access-2", refreshToken: "rt:rotated" });
+    resetSessionOAuthRecords();
+    expect(await readOAuthRecord(api)).toBeUndefined();
+  });
+
+  it("clears the active account even if deleting the old disk record fails", async () => {
+    silenceLog();
+    const { api } = makeFigmaStub({ storageFails: { set: true, delete: true },
+      clientStorage: { [OAUTH_RECORD_NAME]: { ...record({ accessToken: "old-account" }), writtenAt: 1 } } });
+    await writeOAuthRecord(api, record({ accessToken: "new-account" }));
+    expect(await clearOAuthRecord(api)).toBe(false);
+    expect(await readOAuthRecord(api)).toBeUndefined();
+    await writeOAuthRecord(api, record({ accessToken: "fresh-login" }));
+    expect((await readOAuthRecord(api))?.accessToken).toBe("fresh-login");
   });
 });

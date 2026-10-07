@@ -517,7 +517,7 @@ describe("submitAuthResponse", () => {
         expect(lastState(stub)).toEqual({ status: "failed", reason: SIGN_IN_UNREACHABLE_ERR });
     });
 
-    it("says the session will not survive a relaunch when the write fails", async () => {
+    it("keeps the current session usable but warns it will not survive a relaunch when storage fails", async () => {
         const stub = makeFigmaStub({ storageFails: { set: true }, exchange: exchanged() });
         ready(stub);
         await startSignIn(stub.api, relay());
@@ -526,6 +526,7 @@ describe("submitAuthResponse", () => {
 
         expect(lastState(stub)).toMatchObject({ status: "signedIn" });
         expect(stub.notified).toEqual([{ msg: SIGN_IN_NOT_REMEMBERED_ERR, error: true }]);
+        await expect(activeCredential(stub.api)).resolves.toMatchObject({ credential: { kind: "oauth", token: TOKEN } });
         expect(
             stub.posted.filter((m) => m.type === TYPE_CREDENTIAL).at(-1)?.payload
         ).toMatchObject({ credential: { kind: "oauth", token: TOKEN } });

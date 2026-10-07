@@ -42,6 +42,7 @@ import {
     credentialFromRecord,
     isAccessTokenExpired,
     readOAuthRecord,
+    resetSessionOAuthRecords,
     writeOAuthRecord,
     type OAuthRecord,
 } from "./oauthStorage";
@@ -566,6 +567,7 @@ export const refreshCredentialNow = async (
 };
 
 export const resetAuthSession = () => {
+    resetSessionOAuthRecords();
     pending = undefined;
     state = { status: "idle" };
     displayName = undefined;

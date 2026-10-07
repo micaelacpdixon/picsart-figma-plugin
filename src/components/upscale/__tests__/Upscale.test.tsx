@@ -144,6 +144,15 @@ describe("Upscale — what the user is told when a call fails", () => {
     expect(mocks.enhanceImage).toHaveBeenCalledWith(expect.anything(), KEY, 2, "PNG");
   });
 
+  it("does not buy an upscale or open pricing while the balance is unavailable", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<Upscale gottenKey={KEY} balanceKnown={false} isCreditsInsufficient={false} isOffline={false} />);
+    await press();
+    expect(mocks.enhanceImage).not.toHaveBeenCalled();
+    expect(mocks.takeImage).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+  });
+
   it("still charges exactly once per press", async () => {
     mocks.enhanceImage.mockResolvedValue({ success: false, msg: REASON, retryable: false });
 

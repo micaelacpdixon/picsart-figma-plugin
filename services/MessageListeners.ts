@@ -80,6 +80,7 @@ interface IncomingMessage {
   prompt?: string;
   tab?: string;
   height?: number | string;
+  width?: number | string;
   /** Correlates a TYPE_PLACEMENT_DONE reply with the request that asked for it. */
   placementId?: string;
   /** Edit-mode placement: where the candidates go, and what to call them. */
@@ -181,7 +182,8 @@ const handleUiMessage = async (figma: PluginAPI, response: IncomingMessage) => {
       const height = Number(response.height);
       if (Number.isFinite(height) && height > 0) {
         try {
-          figma.ui.resize(WIDGET_WIDTH, Math.round(height));
+          const width = Number(response.width);
+          figma.ui.resize(Number.isFinite(width) && width >= 320 && width <= 640 ? Math.round(width) : WIDGET_WIDTH, Math.round(height));
         } catch (error) {
           console.error("Failed to resize plugin window:", error);
         }

@@ -13,12 +13,14 @@ import "./styles.scss";
 interface Props {
   gottenKey: CredentialInput;
   isCreditsInsufficient: boolean;
+  balanceKnown?: boolean;
   setIsCreditsInsufficient: (status: boolean) => void;
 }
 
 const BalanceBanner: React.FC<Props> = ({
   gottenKey,
   isCreditsInsufficient,
+  balanceKnown = true,
   setIsCreditsInsufficient,
 }) => {
   const { balance } = useBalance();
@@ -28,7 +30,7 @@ const BalanceBanner: React.FC<Props> = ({
 
   useEffect(() => {
     sendMessageToSandBox(true, "", TYPE_GET_BALANCE);
-    setIsCreditsInsufficient(balance <= 0);
+    setIsCreditsInsufficient(balanceKnown && balance <= 0);
   }, [ asCredential(gottenKey).token ]);
 
   return (
@@ -36,9 +38,9 @@ const BalanceBanner: React.FC<Props> = ({
     <div className={"balance-container"}>
       <div className="text-container">
         <span className="balance-text">{balanceModeLabel(mode)}</span>
-        <span className="credits-text">{balance} credits </span>
+        <span className="credits-text">{balanceKnown ? `${balance} credits` : "Balance unavailable"}</span>
       </div>
-      {isCreditsInsufficient ? (
+      {!balanceKnown ? <button className="balance-retry" onClick={() => sendMessageToSandBox(true, "", TYPE_GET_BALANCE)}>Retry</button> : isCreditsInsufficient ? (
         <div style={{ width: 120, height: 30 }}>
           <Button
             type={BtnType.ADD_CREDITS}

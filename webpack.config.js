@@ -72,7 +72,13 @@ module.exports = (env, argv) => ({
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        oneOf: [
+          {
+            test: /@picsart[\\/]design-system[\\/]foundation\.css$/,
+            use: ["style-loader", "css-loader", path.resolve(__dirname, "scripts/cascade-foundation-loader.mjs")],
+          },
+          { use: ["style-loader", "css-loader"] },
+        ],
       },
       {
         test: /\.svg/,

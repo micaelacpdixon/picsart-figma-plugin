@@ -78,11 +78,13 @@ const PROMPT_MAX_LENGTH = 10000;
 interface GenerateImageProps {
   gottenKey: CredentialInput;
   isCreditsInsufficient: boolean;
+  balanceKnown?: boolean;
   isOffline: boolean;
 }
 
 const GenerateImage: React.FC<GenerateImageProps> = ({
   gottenKey,
+  balanceKnown = true,
   isCreditsInsufficient,
   isOffline,
 }) => {
@@ -368,7 +370,7 @@ const GenerateImage: React.FC<GenerateImageProps> = ({
     // overlay blocks the mouse but not the keyboard, and two Enter presses in one tick
     // would both read `loading === false`.
     if (inFlight.current) return;
-    if (!gottenKey || isCreditsInsufficient || isOffline || !prompt.trim() || loading) return;
+    if (!balanceKnown || !gottenKey || isCreditsInsufficient || isOffline || !prompt.trim() || loading) return;
     // Never in the unknown window: the mode is not yet decided, so which endpoint to
     // charge for is not yet decided either.
     if (isUnknown) return;
@@ -493,7 +495,7 @@ const GenerateImage: React.FC<GenerateImageProps> = ({
     // but that is what chose edit mode in the first place — and the unknown window
     // counts as not-ready, so the button cannot offer an operation before the mode
     // that decides its price is known.
-    isReady: !!prompt.trim() && !isUnknown,
+    isReady: balanceKnown && !!prompt.trim() && !isUnknown,
     isCreditsInsufficient,
     active: isEditMode ? BtnType.EDIT_IMAGE_ACTIVE : BtnType.GENERATE_IMAGE_ACTIVE,
     noCredits: isEditMode

@@ -1,4 +1,5 @@
 import Agents from "./components/Agents/Agents";
+import AgentsSignIn from "./components/Agents/AgentsSignIn";
 import { AGENTS_BETA } from "@constants/agents";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -139,6 +140,7 @@ export const App = () => {
         return (
           <RemoveBackground
             gottenKey={active}
+            balanceKnown={balanceKnown}
             isCreditsInsufficient={isCreditsInsufficient}
             isOffline={isOffline}
           />
@@ -147,6 +149,7 @@ export const App = () => {
         return (
           <Upscale
             gottenKey={active}
+            balanceKnown={balanceKnown}
             isCreditsInsufficient={isCreditsInsufficient}
             isOffline={isOffline}
           />
@@ -155,6 +158,7 @@ export const App = () => {
         return (
           <GenerateImage
             gottenKey={active}
+            balanceKnown={balanceKnown}
             isCreditsInsufficient={isCreditsInsufficient}
             isOffline={isOffline}
           />
@@ -197,6 +201,7 @@ export const App = () => {
         setActive(next?.credential ?? null, next?.apiKey ?? "");
         setIsActive(() => true);
         setBalanceKnown(false);
+        setIsCreditsInsufficient(false);
         sendMessageToSandBox(true, "", TYPE_GET_BALANCE);
       }
       else if (type === TYPE_REQUEST_RANDOM) {
@@ -237,9 +242,10 @@ export const App = () => {
         setTab(payload);
       } else if (type === TYPE_GET_BALANCE) {
         setIsActive(() => true);
-        setBalance(payload);
-        setBalanceKnown(true);
-        setIsCreditsInsufficient(payload <= 0);
+        const known = typeof payload === "number" && Number.isFinite(payload);
+        if (known) setBalance(() => payload);
+        setBalanceKnown(known);
+        setIsCreditsInsufficient(known && payload <= 0);
       }
     };
 
@@ -255,8 +261,9 @@ export const App = () => {
     };
   }, []);
 
+  const SignInScreen = AGENTS_BETA && tab === TabType.AGENTS ? AgentsSignIn : SignIn;
   const signInScreen = (
-    <SignIn
+    <SignInScreen
       authState={authState}
       showConfirmation={showConfirmation}
       hasApiKey={!!apiKey}
@@ -295,6 +302,7 @@ export const App = () => {
         <div className="bottom-banner">
           {(tab === TabType.REMOVE_BACKGROUND || tab === TabType.UPSCALE || tab === TabType.GENERATE_IMAGE) && (
             <BalanceBanner
+              balanceKnown={balanceKnown}
               gottenKey={credential}
               isCreditsInsufficient={isCreditsInsufficient}
               setIsCreditsInsufficient={setIsCreditsInsufficient}

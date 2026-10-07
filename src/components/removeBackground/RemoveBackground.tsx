@@ -51,11 +51,13 @@ import type { CredentialInput } from "@app-types/credential";
 interface RemoveBackgroundProps {
   gottenKey: CredentialInput;
   isCreditsInsufficient: boolean;
+  balanceKnown?: boolean;
   isOffline: boolean;
 }
 
 const RemoveBackground: React.FC<RemoveBackgroundProps> = ({
   gottenKey,
+  balanceKnown = true,
   isCreditsInsufficient,
   isOffline,
 }) => {
@@ -100,7 +102,7 @@ const RemoveBackground: React.FC<RemoveBackgroundProps> = ({
     // `loading` is in this guard because the loading overlay blocks the mouse but
     // not the keyboard, so a second Enter or Space on the focused button started a
     // second billable call.
-    if (!hasImage || !gottenKey || isCreditsInsufficient || isOffline || loading) {
+    if (!balanceKnown || !hasImage || !gottenKey || isCreditsInsufficient || isOffline || loading) {
       return;
     }
     setLoading(true);
@@ -165,7 +167,7 @@ const RemoveBackground: React.FC<RemoveBackgroundProps> = ({
   const { btnType, cb } = resolveActionButton({
     isOffline,
     hasKey: !!gottenKey,
-    isReady: hasImage,
+    isReady: balanceKnown && hasImage,
     isCreditsInsufficient,
     active: BtnType.REMOVE_BG_ACTIVE,
     noCredits: BtnType.REMOVE_BG_NO_CREDITS,

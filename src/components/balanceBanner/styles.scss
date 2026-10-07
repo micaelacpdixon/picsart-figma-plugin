@@ -139,3 +139,7 @@
   }
 
 }
+
+.balance-retry { border: 1px solid currentColor; border-radius: 4px; background: transparent; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+.figma-light .balance-retry { color: #520be5; }
+.figma-dark .balance-retry { color: #bd99f8; }

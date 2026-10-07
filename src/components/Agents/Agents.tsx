@@ -5,7 +5,7 @@ import { sendMessageToSandBox } from "@api/index";
 import { TYPE_SWITCH_TAB } from "@constants/types";
 import { TabType } from "@app-types/enums";
 import { requestCanvas } from "./canvasBridge";
-import logo from "@assets/agents/picsart-logo.svg";
+import { AgentsShell, Button, Text, TextField, IconArrowUp, IconArrowUpRight, IconChevronDown, IconAddPhotoOutline, IconRefresh, IconArrowLeft, IconPlus, IconClose, IconSearch } from "./cascade";
 import aura from "@assets/agents/aura.png";
 import mila from "@assets/agents/style-remix.png";
 import "./styles.scss";
@@ -46,12 +46,12 @@ function AgentsSession({ onSignIn, oauth, client: incomingClient }: { onSignIn: 
   const [selected, setSelected] = useState("aura");
   const [chats, setChats] = useState<Record<string, Chat>>({});
   const [catalogError, setCatalogError] = useState("");
+  const [catalogStatus, setCatalogStatus] = useState(0);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [canvasBusy, setCanvasBusy] = useState(false);
   const [picker, setPicker] = useState(false);
   const [search, setSearch] = useState("");
-  const [theme, setTheme] = useState<"auto" | "light" | "dark">("auto");
   const [editor, setEditor] = useState("figma");
   const [notice, setNotice] = useState("");
   const abortRef = useRef(new AbortController());
@@ -64,11 +64,11 @@ function AgentsSession({ onSignIn, oauth, client: incomingClient }: { onSignIn: 
   const update = (id: string, patch: Partial<Chat>) => setChats(previous => ({ ...previous, [id]: { ...(previous[id] || emptyChat()), ...patch } }));
 
   const loadCatalog = async () => {
-    setLoading(true); setCatalogError("");
+    setLoading(true); setCatalogError(""); setCatalogStatus(0);
     try {
       const list = await client.catalog(abortRef.current.signal);
       setAgents(list); setSelected(list.some(a => a.id === "aura") ? "aura" : list[0].id);
-    } catch (error) { if (!abortRef.current.signal.aborted) setCatalogError(errorText(error)); }
+    } catch (error) { if (!abortRef.current.signal.aborted) { setCatalogError(errorText(error)); setCatalogStatus(error instanceof AgentsError ? error.status : 0); } }
     finally { setLoading(false); }
   };
   useEffect(() => {
@@ -138,42 +138,85 @@ function AgentsSession({ onSignIn, oauth, client: incomingClient }: { onSignIn: 
     update(selected, { attachment: { name: String(result.name), data, preview: `data:image/png;base64,${data}` } });
   }, "Selection attached. It will be uploaded when you send.");
 
-  return <section className="agents" data-theme={theme} aria-label="Picsart AI Agents">
-    <header className="agents-brand"><img src={logo} alt="Picsart" /><span>AI Agents</span><small>STAFF BETA</small>
-      <button className="agents-icon" aria-label={`Theme: ${theme}. Change theme`} onClick={() => setTheme(theme === "auto" ? "light" : theme === "light" ? "dark" : "auto")}>{theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐"}</button>
-    </header>
+  return <AgentsShell>
     {oauth && agents.length > 0 && <div className="agents-toolbar">
-      <button className="agent-current" onClick={() => setPicker(!picker)} disabled={!agents.length || busy || canvasBusy} aria-expanded={picker} aria-label="Change agent">
-        {avatars[selected] && <img src={avatars[selected]} alt="" />}<span><strong>{agent?.name || "Choose an agent"}</strong><small>{agent?.role || "Your creative team, in Figma"}</small></span><span>⌄</span>
+      <button className="agent-current" onClick={() => setPicker(!picker)} disabled={busy || canvasBusy} aria-expanded={picker} aria-label="Change agent">
+        {avatars[selected] ? <img src={avatars[selected]} alt="" /> : <span className="agent-initial">{agent?.name.slice(0, 1)}</span>}
+        <span><strong>{agent?.name || "Choose an agent"}</strong><small>{agent?.role || "Your creative partner"}</small></span><IconChevronDown />
       </button>
-      <button className="agents-icon" title="New chat" aria-label="New chat" disabled={blocked || canvasBusy || !chat.messages.length} onClick={() => setChats(previous => ({ ...previous, [selected]: emptyChat() }))}>＋</button>
+      <Button dataTestId="agent-new-chat" skin="negative" variant="text" size="small" centerIcon={IconPlus}
+        title="New chat" aria-label="New chat" isDisabled={blocked || canvasBusy || !chat.messages.length}
+        onClick={() => setChats(previous => ({ ...previous, [selected]: emptyChat() }))} />
     </div>}
-    {picker ? <div className="agents-picker"><label>Find your creative partner<input autoFocus type="search" placeholder="Search agents or skills" value={search} onChange={e => setSearch(e.target.value)} /></label>
-      <div className="agents-options">{filtered.map(a => <button key={a.id} aria-pressed={selected === a.id} onClick={() => { setSelected(a.id); setPicker(false); setNotice(""); }}>
-        {avatars[a.id] ? <img src={avatars[a.id]} alt="" /> : <span className="agent-initial">{a.name.slice(0, 1)}</span>}<span><strong>{a.name}</strong><small>{a.role}</small></span>{selected === a.id && <span>✓</span>}
-      </button>)}{!filtered.length && <p>No matching agents.</p>}</div></div>
-      : <div className="agents-transcript" role="log" aria-label="Conversation" aria-live="polite">
-        {!oauth ? <div className="agents-welcome"><img src={aura} alt="Aura, Picsart's creative agent" /><h1>Your next idea starts here.</h1><p>Bring your Picsart creative team into Figma and FigJam.</p><button className="agents-primary" onClick={onSignIn}>Sign in with Picsart</button><small>Use your own account for the PA staff beta.</small></div>
-          : loading ? <p className="agents-loading" role="status">Finding your creative team…</p>
-          : catalogError ? <div className="agents-welcome"><h2>Let's get connected.</h2><p role="alert">{catalogError}</p><button onClick={loadCatalog}>Try again</button><button onClick={onSignIn}>Sign in again</button></div>
-          : !chat.messages.length && <div className="agents-welcome">{avatars[selected] && <img src={avatars[selected]} alt="" />}<span className="agents-eyebrow">MEET {agent?.name?.toUpperCase() || "YOUR TEAM"}</span><h1>What are we<br />creating today?</h1><p>{agent?.description || "An idea, a frame, a fresh direction. Let's make it happen."}</p>
-            <div className="agents-starters">{["Help me explore a creative direction", "Give me feedback on my selection", "Turn an idea into a visual concept"].map(prompt => <button key={prompt} onClick={() => update(selected, { draft: prompt })} disabled={blocked}>{prompt}<span>↗</span></button>)}</div></div>}
-        {chat.messages.map((message, index) => <article key={index} className={`agent-message ${message.role}`}><small>{message.role === "user" ? "You" : agent?.name}</small><p>{message.text}</p>
-          {message.result?.plans.map((plan, i) => <div className="agent-plan" key={i}><strong>{plan.title}</strong><small>{plan.status}{plan.credits !== null ? ` · Estimated ${plan.credits} credits` : ""}</small></div>)}
-          {message.result?.assets.map(asset => <div className="agent-image" key={asset.url}><img src={asset.url} alt={asset.label} referrerPolicy="no-referrer" /><button disabled={canvasBusy} onClick={() => canvas(async () => { const bytes = await downloadImage(asset.url); await requestCanvas("image", { bytes: Array.from(bytes), name: `${agent?.name} — ${asset.label}` }); }, "Image added to the canvas.")}>Add to {editor === "figjam" ? "board" : "canvas"} ↗</button></div>)}
-          {editor === "figjam" && message.role === "agent" && message.text && <button className="agents-text-button" disabled={canvasBusy || message.text.length + (agent?.name.length || 0) + 2 > 5000} onClick={() => canvas(() => requestCanvas("note", { text: `${agent?.name}\n\n${message.text}` }), "Note added to the board.")}>Add note to board ↗</button>}
-          {message.result?.questions.map(question => <button className="agent-question" key={question} disabled={blocked} onClick={() => update(selected, { draft: question })}>{question}</button>)}
-        </article>)}
-        {busy && <p className="agent-thinking" role="status">{agent?.name || "Your agent"} is working…</p>}
-        {chat.error && <div className="agents-error" role="alert"><p>{chat.error}</p>{chat.task && !busy && <button onClick={resume}>Check result</button>}{chat.uncertain && <button onClick={() => setChats(previous => ({ ...previous, [selected]: emptyChat() }))}>I've checked Picsart — start a new chat</button>}</div>}
-        <div ref={bottomRef} />
-      </div>}
-    {oauth && agents.length > 0 && !picker && <div className="agents-composer"><label className="sr-only" htmlFor="agent-prompt">Message {agent?.name}</label>
-      {chat.attachment && <div className="agents-attachment"><img src={chat.attachment.preview} alt="Selected canvas content" /><span>{chat.attachment.name}</span><button aria-label="Remove attachment" disabled={blocked} onClick={() => update(selected, { attachment: undefined })}>×</button></div>}
-      <textarea id="agent-prompt" rows={2} maxLength={8000} placeholder={`Ask ${agent?.name || "your agent"} anything…`} value={chat.draft} disabled={blocked} onChange={e => update(selected, { draft: e.target.value })} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} />
-      <div className="agents-compose-actions"><button disabled={blocked || canvasBusy} onClick={capture}>＋ Attach selection</button><button className="agents-send" aria-label="Send message" disabled={blocked || !chat.draft.trim() || canvasBusy} onClick={send}>↑</button></div>
+    {picker ? <div className="agents-picker">
+      <div className="agents-picker-heading"><div><h2>Your creative team</h2><p>A different perspective for every idea.</p></div>
+        <Button dataTestId="agent-picker-back" skin="negative" variant="text" size="small" centerIcon={IconArrowLeft} aria-label="Back to conversation" onClick={() => setPicker(false)} />
+      </div>
+      <TextField autoFocus type="search" aria-label="Search agents" placeholder="Search by name or skill" startIcon={IconSearch}
+        value={search} onChange={event => setSearch(event.target.value)} dataTestId="agent-search" />
+      <div className="agents-options">{filtered.map(a => <button className="agent-option" key={a.id} aria-pressed={selected === a.id}
+        onClick={() => { setSelected(a.id); setPicker(false); setNotice(""); }}>
+        {avatars[a.id] ? <img src={avatars[a.id]} alt="" /> : <span className="agent-initial">{a.name.slice(0, 1)}</span>}
+        <span><strong>{a.name}</strong><small>{a.role}</small></span><span className="agent-option-mark">{selected === a.id ? "Selected" : <IconArrowUpRight />}</span>
+      </button>)}{!filtered.length && <p className="agents-empty-search">No agents match “{search}”. Try another name or skill.</p>}</div>
+    </div> : <div className="agents-transcript" role="log" aria-label="Conversation" aria-live="polite">
+      {!oauth ? <div className="agents-welcome agents-onboarding">
+        <div className="agents-portrait-pair"><img src={aura} alt="Aura, your creative director" /><img src={mila} alt="Mila, your art director" /></div>
+        <span className="agents-eyebrow">A LITTLE CREATIVE COMPANY</span>
+        <h1>Big ideas.<br />Meet your team.</h1>
+        <p>Find a direction, explore a new look, and bring it straight to your canvas.</p>
+        <div className="agents-onboarding-actions"><Button dataTestId="agent-signin" isFullWidth onClick={onSignIn} endIcon={IconArrowUpRight}>Sign in with Picsart</Button><small>Use your own Picsart account to get started.</small></div>
+        <div className="agents-feature-list"><span><IconAddPhotoOutline /> Start with your selection</span><span><IconArrowUpRight /> Bring ideas onto the canvas</span></div>
+      </div> : loading ? <div className="agents-loading" role="status"><div className="agents-loading-avatars"><img src={aura} alt="" /><img src={mila} alt="" /></div><h2>Getting the team together…</h2><p>Connecting to your Picsart agents.</p></div>
+        : catalogError ? <div className="agents-connection">
+          <div className="agents-account-status"><span className="agents-status-dot" />{catalogStatus === 401 ? "Sign-in needs refreshing" : "Picsart account connected"}</div>
+          <img className="agents-connection-avatar" src={aura} alt="" />
+          <h1>{catalogStatus === 404 ? <>Your team is<br />almost here.</> : "Let's get you connected."}</h1>
+          <p className="agents-connection-error" role="alert">{catalogError}</p>
+          {catalogStatus !== 401 && <p className="agents-connection-note">Your Agents balance hasn't been checked. Adding credits won't resolve this connection issue.</p>}
+          <div className="agents-connection-actions"><Button dataTestId="agent-retry" startIcon={IconRefresh} onClick={loadCatalog} isFullWidth>Check connection</Button>
+            <Button dataTestId="agent-open-picsart" variant="outlined" skin="negative" isFullWidth endIcon={IconArrowUpRight} onClick={() => window.open("https://picsartstage2.com/ai-agent/", "_blank", "noopener,noreferrer")}>Open Picsart Agents</Button>
+            <Button dataTestId="agent-reconnect" variant="text" skin="negative" size="small" onClick={onSignIn}>Sign in again</Button></div>
+        </div> : !chat.messages.length && <div className="agents-welcome">
+          <div className="agents-hello"><Text size="t4" color="tint-1">A fresh perspective, with {agent?.name}.</Text></div>
+          <h1>What are we<br />creating today?</h1>
+          <p>{agent?.description || "An idea, a frame, a fresh direction. Let's make it happen."}</p>
+          <div className="agents-starters"><span className="agents-starters-label">A FEW PLACES TO START</span>{[
+            ["Explore a creative direction", "Help me explore a creative direction"],
+            ["Get feedback on my selection", "Give me feedback on my selection"],
+            ["Turn an idea into a visual", "Turn an idea into a visual concept"],
+          ].map(([label, prompt], index) => <Button key={label} dataTestId={`agent-starter-${index}`} skin="neutral" variant="filled" isFullWidth endIcon={IconArrowUpRight}
+            onClick={() => update(selected, { draft: prompt })} isDisabled={blocked}>{label}</Button>)}</div>
+        </div>}
+      {chat.messages.map((message, index) => <article key={index} className={`agent-message ${message.role}`}>
+        <div className="agent-message-author">{message.role === "agent" && avatars[selected] && <img src={avatars[selected]} alt="" />}<span>{message.role === "user" ? "You" : agent?.name}</span></div>
+        <p>{message.text}</p>
+        {message.result?.plans.map((plan, i) => <div className="agent-plan" key={i}><span className="agents-eyebrow">CREATIVE PLAN</span><strong>{plan.title}</strong><small>{plan.status}{plan.credits !== null ? ` · Estimated ${plan.credits} credits` : ""}</small></div>)}
+        {message.result?.assets.map((asset, i) => <div className="agent-image" key={asset.url}><img src={asset.url} alt={asset.label} referrerPolicy="no-referrer" />
+          <Button dataTestId={`agent-place-${index}-${i}`} isFullWidth isDisabled={canvasBusy} endIcon={IconArrowUpRight} onClick={() => canvas(async () => { const bytes = await downloadImage(asset.url); await requestCanvas("image", { bytes: Array.from(bytes), name: `${agent?.name} — ${asset.label}` }); }, "Image added to the canvas.")}>Add to {editor === "figjam" ? "board" : "canvas"}</Button></div>)}
+        {editor === "figjam" && message.role === "agent" && message.text && <Button dataTestId={`agent-note-${index}`} skin="negative" variant="text" size="small" endIcon={IconArrowUpRight}
+          isDisabled={canvasBusy || message.text.length + (agent?.name.length || 0) + 2 > 5000} onClick={() => canvas(() => requestCanvas("note", { text: `${agent?.name}\n\n${message.text}` }), "Note added to the board.")}>Add note to board</Button>}
+        {message.result?.questions.map((question, i) => <Button dataTestId={`agent-question-${index}-${i}`} className="agent-question" variant="outlined" skin="negative" key={question} isDisabled={blocked} onClick={() => update(selected, { draft: question })}>{question}</Button>)}
+      </article>)}
+      {busy && <div className="agent-thinking" role="status"><span /><span /><span /><small>{agent?.name || "Your agent"} is working</small></div>}
+      {chat.error && <div className="agents-error" role="alert"><p>{chat.error}</p>
+        {chat.task && !busy && <Button dataTestId="agent-check-result" size="small" onClick={resume}>Check result</Button>}
+        {chat.uncertain && <Button dataTestId="agent-acknowledge" variant="outlined" skin="negative" onClick={() => setChats(previous => ({ ...previous, [selected]: emptyChat() }))}>I've checked Picsart — start a new chat</Button>}</div>}
+      <div ref={bottomRef} />
     </div>}
+    {oauth && agents.length > 0 && !picker && <div className="agents-composer-wrap"><div className="agents-composer">
+      <label className="sr-only" htmlFor="agent-prompt">Message {agent?.name}</label>
+      {chat.attachment && <div className="agents-attachment"><img src={chat.attachment.preview} alt="Selected canvas content" /><span>{chat.attachment.name}</span>
+        <Button dataTestId="agent-remove-attachment" aria-label="Remove attachment" skin="negative" variant="text" size="small" centerIcon={IconClose} isDisabled={blocked} onClick={() => update(selected, { attachment: undefined })} /></div>}
+      <textarea id="agent-prompt" rows={2} maxLength={8000} placeholder={`Ask ${agent?.name || "your agent"} anything…`} value={chat.draft} disabled={blocked}
+        onChange={e => update(selected, { draft: e.target.value })} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} />
+      <div className="agents-compose-actions"><Button dataTestId="agent-attach" skin="negative" variant="text" size="small" startIcon={IconAddPhotoOutline} isDisabled={blocked || canvasBusy} onClick={capture}>Attach selection</Button>
+        <Button dataTestId="agent-send" aria-label="Send message" size="small" centerIcon={IconArrowUp} isDisabled={blocked || !chat.draft.trim() || canvasBusy} onClick={send} /></div>
+    </div><small className="agents-compose-hint">Enter to send · Shift + Enter for a new line</small></div>}
     {notice && <p className="agents-notice" role="status">{notice}</p>}
-    <footer className="agents-footer"><span>Staging · {editor === "figjam" ? "FigJam" : "Figma"}</span><button disabled={busy || canvasBusy || Object.values(chats).some(value => !!value.task || !!value.uncertain)} onClick={() => sendMessageToSandBox(true, "", TYPE_SWITCH_TAB, undefined, { tab: TabType.GENERATE_IMAGE })}>Other Picsart tools ↗</button></footer>
-  </section>;
+    <footer className="agents-footer"><span>PA staff beta · {editor === "figjam" ? "FigJam" : "Figma"}</span>
+      <Button dataTestId="agent-other-tools" skin="negative" variant="text" size="small" endIcon={IconArrowUpRight}
+        isDisabled={busy || canvasBusy || Object.values(chats).some(value => !!value.task || !!value.uncertain)}
+        onClick={() => sendMessageToSandBox(true, "", TYPE_SWITCH_TAB, undefined, { tab: TabType.GENERATE_IMAGE })}>More tools</Button></footer>
+  </AgentsShell>;
 }

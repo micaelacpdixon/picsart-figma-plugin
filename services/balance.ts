@@ -35,7 +35,7 @@ export const deliverBalance = (
   if (!credential || sessionStorage.isWarmFor(identity)) {
     postToUi(pluginApi, {
       type: TYPE_GET_BALANCE,
-      payload: sessionStorage.balanceFor(identity) ?? 0,
+      payload: sessionStorage.balanceFor(identity) ?? null,
     });
     return Promise.resolve();
   }
@@ -52,7 +52,7 @@ export const deliverBalance = (
     .then(() => {
       postToUi(pluginApi, {
         type: TYPE_GET_BALANCE,
-        payload: sessionStorage.balanceFor(identity) ?? 0,
+        payload: sessionStorage.balanceFor(identity) ?? null,
       });
     })
     .finally(() => reads.delete(identity));

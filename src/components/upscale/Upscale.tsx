@@ -26,6 +26,7 @@ import type { CredentialInput } from "@app-types/credential";
 interface UpscaleProps {
   gottenKey: CredentialInput;
   isCreditsInsufficient: boolean;
+  balanceKnown?: boolean;
   isOffline: boolean;
 }
 const options = ["2", "4", "6", "8"];
@@ -57,6 +58,7 @@ const usableFactors = (width: number, height: number): string[] => {
 
 const Upscale: React.FC<UpscaleProps> = ({
   gottenKey,
+  balanceKnown = true,
   isCreditsInsufficient,
   isOffline,
 }) => {
@@ -92,6 +94,7 @@ const Upscale: React.FC<UpscaleProps> = ({
       !hasImage ||
       !gottenKey ||
       !scaleFactor ||
+      !balanceKnown ||
       isCreditsInsufficient ||
       isOffline ||
       loading
@@ -155,7 +158,7 @@ const Upscale: React.FC<UpscaleProps> = ({
   const { btnType, cb } = resolveActionButton({
     isOffline,
     hasKey: !!gottenKey,
-    isReady: hasImage,
+    isReady: balanceKnown && hasImage,
     isCreditsInsufficient,
     active: BtnType.UPSCALE_ACTIVE,
     noCredits: BtnType.UPSCALE_NO_CREDITS,

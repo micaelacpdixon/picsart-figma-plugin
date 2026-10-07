@@ -22,7 +22,7 @@
 import React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TYPE_AUTH_STATE, TYPE_CREDENTIAL, TYPE_VALIDATE_KEY } from "@constants/types";
+import { TYPE_AUTH_STATE, TYPE_CREDENTIAL, TYPE_VALIDATE_KEY, TYPE_GET_BALANCE } from "@constants/types";
 
 const mocks = vi.hoisted(() => ({
   sendMessageToSandBox: vi.fn(),
@@ -53,7 +53,7 @@ vi.mock("@components/index", () => ({
   PANEL_FOOTER_ID: "panel-footer",
   Navbar: () => <div data-testid="navbar" className="navbar-container" />,
   Account: () => <div />,
-  BalanceBanner: () => <div data-testid="balance-banner" />,
+  BalanceBanner: ({ balanceKnown, isCreditsInsufficient }: { balanceKnown: boolean; isCreditsInsufficient: boolean }) => <div data-testid="balance-banner" data-known={balanceKnown} data-insufficient={isCreditsInsufficient} />,
   ChangeAPIkey: () => <div />,
   IntroPage: ({ onSignIn }: { onSignIn?: () => void }) => (
     <div data-testid="intro">
@@ -287,5 +287,21 @@ describe("credential validation replies", () => {
 
     expect(screen.getByTestId("navbar")).toBeTruthy();
     expect(screen.getByTestId("tab-body")).toBeTruthy();
+  });
+});
+
+
+describe("balance availability", () => {
+  it("distinguishes an unavailable balance from a confirmed zero and clears it on account change", () => {
+    renderApp(); authenticate();
+    const reply = (payload: unknown) => act(() => { window.dispatchEvent(fromSandbox({ type: TYPE_GET_BALANCE, payload })); });
+    reply(null);
+    expect(screen.getByTestId("balance-banner").dataset).toMatchObject({ known: "false", insufficient: "false" });
+    reply(0);
+    expect(screen.getByTestId("balance-banner").dataset).toMatchObject({ known: "true", insufficient: "true" });
+    authenticate();
+    expect(screen.getByTestId("balance-banner").dataset).toMatchObject({ known: "false", insufficient: "false" });
+    reply(25);
+    expect(screen.getByTestId("balance-banner").dataset).toMatchObject({ known: "true", insufficient: "false" });
   });
 });

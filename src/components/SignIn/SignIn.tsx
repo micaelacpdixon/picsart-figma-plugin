@@ -19,7 +19,7 @@ import { SIGN_IN_DECLINED_ERR } from "@constants/errorMessages";
 import { cancelSignIn, submitAuthResponse } from "@utils/credentialBridge";
 import "./styles.scss";
 
-interface Props {
+export interface Props {
   authState: AuthState;
   showConfirmation: boolean;
   hasApiKey: boolean;

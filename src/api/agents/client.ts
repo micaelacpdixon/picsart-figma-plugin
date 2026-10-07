@@ -50,7 +50,12 @@ export function normalizeResult(value: unknown): AgentResult {
 }
 
 export class AgentsError extends Error {
-  constructor(message: string, readonly status = 0) { super(message); }
+  constructor(message: string, readonly status = 0) {
+    super(message);
+    // ES5 output needs the prototype restored for status-based retry guards.
+    Object.setPrototypeOf(this, AgentsError.prototype);
+    this.name = "AgentsError";
+  }
 }
 
 export function createAgentsClient(getCredential: () => CredentialInput | undefined, refresh: () => Promise<boolean>, fetcher: typeof fetch = fetch) {

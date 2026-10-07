@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({ sendMessageToSandBox: vi.fn() }));
 vi.mock("@api/index", () => ({ sendMessageToSandBox: mocks.sendMessageToSandBox }));
 
 import SignIn from "../SignIn";
+import AgentsSignIn from "../../Agents/AgentsSignIn";
 
 const AWAITING: AuthState = {
   status: "awaiting",
@@ -239,5 +240,17 @@ describe("the confirmation", () => {
   it("does not render at all when the flow did not complete here", () => {
     render(<SignIn {...props({ authState: signedIn, showConfirmation: false })} />);
     expect(screen.queryByText("Signed in as Ada.")).toBeNull();
+  });
+});
+
+
+describe("Agents sign-in", () => {
+  it.each([true, false])("continues to the Agents service without interpreting image-tool credits (known: %s)", balanceKnown => {
+    const options = props({ authState: { status: "signedIn", scopes: [], expiresAt: Date.now() + 3600000 }, showConfirmation: true, balance: 0, balanceKnown });
+    render(<AgentsSignIn {...options} />);
+    expect(screen.queryByText(/no credits left/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add Credits" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Continue to Agents" }));
+    expect(options.onDone).toHaveBeenCalledOnce();
   });
 });

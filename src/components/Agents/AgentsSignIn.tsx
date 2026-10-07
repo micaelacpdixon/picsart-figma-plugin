@@ -6,6 +6,7 @@ import { SIGN_IN_DECLINED_ERR } from "@constants/errorMessages";
 import { SIGN_IN_PASTE_PLACEHOLDER, signedInAs } from "@ui_constants/texts";
 import { AgentsShell, Button as CascadeButton, TextField, IconArrowUpRight } from "./cascade";
 import aura from "@assets/agents/aura.png";
+import { ACCOUNTS_ORIGIN } from "@constants/auth";
 
 export default function AgentsSignIn({ authState, showConfirmation, onDone, onRetry }: Props) {
   const [pasted, setPasted] = useState("");
@@ -27,7 +28,7 @@ export default function AgentsSignIn({ authState, showConfirmation, onDone, onRe
         <h1>{confirmed ? "You're in." : awaiting ? "One quick hello." : working ? "Connecting to Picsart…" : "Let's reconnect."}</h1>
         <p className="agents-auth-description" role="status">{confirmed
           ? "Your account is connected. Let's check which agents are available for you."
-          : awaiting ? "Finish signing in at accounts.picsart.com, then come back here."
+          : awaiting ? `Finish signing in with your staging account at ${new URL(ACCOUNTS_ORIGIN).hostname}, then come back here.`
           : working ? "Getting your account ready. This should only take a moment."
           : reason || "Sign in to bring your creative team into Figma and FigJam."}</p>
         {confirmed && authState.name && <p className="agents-account-name">{signedInAs(authState.name)}</p>}

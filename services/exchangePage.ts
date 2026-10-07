@@ -1,6 +1,8 @@
 import {
     EXCHANGE_PAGE_URL,
+    EXCHANGE_PAGE_READY_TIMEOUT_MS,
     EXCHANGE_TIMEOUT_MS,
+    AUTH_TOKEN,
     OAUTH_CLIENT_ID,
     OAUTH_REDIRECT_URI,
     TYPE_EXCHANGE_PAGE_READY,
@@ -11,18 +13,21 @@ import {
 import { authLog } from "./authLog";
 import type { TokenFailureReason } from "./oauthClient";
 import { addUiMessageHandler, postToUi } from "./UiBridge";
+import { AGENTS_BETA } from "@constants/agents";
 
 export interface ExchangePageInfo {
     clientId?: string;
     redirectUri?: string;
     pageOrigin?: string;
     secureContext?: boolean;
+    tokenEndpoint?: string;
 }
 
 let page: ExchangePageInfo | undefined;
 let requested = false;
 let nextNonce = 0;
 const waiters = new Map<number, (result: ExchangeReply) => void>();
+const readyWaiters = new Set<() => void>();
 
 export type ExchangeReply =
     | {
@@ -52,6 +57,7 @@ interface IncomingExchangeMessage {
     redirectUri?: string;
     pageOrigin?: string;
     secureContext?: boolean;
+    tokenEndpoint?: string;
     [key: string]: unknown;
 }
 
@@ -72,6 +78,7 @@ const handleMessage = (message: IncomingExchangeMessage) => {
             redirectUri: message.redirectUri,
             pageOrigin: message.pageOrigin,
             secureContext: message.secureContext,
+            tokenEndpoint: message.tokenEndpoint,
         };
 
         if (page.clientId && page.clientId !== OAUTH_CLIENT_ID) {
@@ -89,6 +96,7 @@ const handleMessage = (message: IncomingExchangeMessage) => {
         if (!page.pageOrigin || page.pageOrigin === "null") {
             authLog("the exchange page reported an opaque origin; the exchange cannot work");
         }
+        readyWaiters.forEach(resolve => resolve());
         return;
     }
 
@@ -125,18 +133,43 @@ export const loadExchangePage = (pluginApi: PluginAPI) => {
 
 export const exchangePageInfo = (): ExchangePageInfo | undefined => page;
 
+export const BETA_SIGN_IN_UNAVAILABLE = "Staff beta sign-in isn't ready yet. Please try again once the beta is enabled.";
+
+const matchesBeta = (): boolean => !!page && page.clientId === OAUTH_CLIENT_ID
+    && page.redirectUri === OAUTH_REDIRECT_URI && page.tokenEndpoint === AUTH_TOKEN
+    && page.pageOrigin === "https://api-staging.picsart.io" && page.secureContext === true;
+
+// Older staging helpers exchange with production. Never send a staging code or
+// refresh token to that helper, or open a login that cannot return successfully.
+export const betaExchangeReady = async (pluginApi: PluginAPI): Promise<boolean> => {
+    if (!AGENTS_BETA) return true;
+    if (page) return matchesBeta();
+    if (!requested) loadExchangePage(pluginApi);
+    await new Promise<void>(resolve => {
+        const finish = () => { clearTimeout(timer); readyWaiters.delete(finish); resolve(); };
+        const timer = setTimeout(finish, EXCHANGE_PAGE_READY_TIMEOUT_MS);
+        readyWaiters.add(finish);
+    });
+    return matchesBeta();
+};
+
 export const resetExchangePage = () => {
+    readyWaiters.forEach(resolve => resolve());
+    readyWaiters.clear();
     page = undefined;
     requested = false;
     nextNonce = 0;
     waiters.clear();
 };
 
-const requestFromPage = (
+const requestFromPage = async (
     pluginApi: PluginAPI,
     fields: Record<string, unknown>
-): Promise<ExchangeReply> =>
-    new Promise<ExchangeReply>((resolve) => {
+): Promise<ExchangeReply> => {
+    if (AGENTS_BETA && !await betaExchangeReady(pluginApi)) {
+        return { ok: false, reason: "blocked", error: BETA_SIGN_IN_UNAVAILABLE };
+    }
+    return new Promise<ExchangeReply>((resolve) => {
         addUiMessageHandler(pluginApi, handleMessage);
         if (!requested) {
             loadExchangePage(pluginApi);
@@ -164,6 +197,7 @@ const requestFromPage = (
 
         postToUi(pluginApi, { type: TYPE_EXCHANGE_REQUEST, nonce, ...fields });
     });
+};
 
 export const exchangeViaPage = (
     pluginApi: PluginAPI,

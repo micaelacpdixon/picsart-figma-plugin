@@ -38,12 +38,14 @@ const PAGE_ORIGIN = "https://api.picsart.io";
 const readyEvent = () =>
     ({
         origin: PAGE_ORIGIN,
+        source: document.querySelector("iframe")?.contentWindow,
         data: {
             type: "picsart-auth-ready",
             clientId: "client",
             redirectUri: "https://api.picsart.io/v1/auth/handoff/callback",
             origin: PAGE_ORIGIN,
             secureContext: true,
+            tokenEndpoint: "https://auth.picsart.com/api/oauth2/token",
         },
     }) as unknown as MessageEvent;
 
@@ -69,6 +71,14 @@ afterEach(() => {
 });
 
 describe("the exchange frame", () => {
+    it("ignores another frame on the same origin and forwards the actual helper's token endpoint", () => {
+        loadExchangePage(PAGE_URL);
+        spyOnFrame();
+        forwardFromExchangePage({ ...readyEvent(), source: window } as MessageEvent);
+        expect(mocks.sendMessageToSandBox).not.toHaveBeenCalled();
+        forwardFromExchangePage(readyEvent());
+        expect(mocks.sendMessageToSandBox.mock.calls[0][4]).toHaveProperty("tokenEndpoint", "https://auth.picsart.com/api/oauth2/token");
+    });
     it("forwards the refresh grant, not just the authorization-code fields", () => {
         loadExchangePage(PAGE_URL);
         const posted = spyOnFrame();

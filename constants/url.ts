@@ -1,7 +1,8 @@
 import { AUTH_ORIGIN } from "./auth";
+import { AGENTS_BETA } from "./agents";
 
-export const PICSARTURL = "https://api.picsart.io/v1/" as const;
-export const GENAIURL = "https://genai-api.picsart.io/v1/" as const;
+export const PICSARTURL = AGENTS_BETA ? "https://api-staging.picsart.io/v1/" : "https://api.picsart.io/v1/";
+export const GENAIURL = AGENTS_BETA ? "https://genai-api-staging.picsart.io/v1/" : "https://genai-api.picsart.io/v1/";
 export const REMOVEBG = "figma/removebg" as const;
 export const GENERATEIMAGE = "figma/text2image" as const;
 export const UPSCALE = "figma/upscale" as const;
@@ -49,8 +50,8 @@ export const RESULT_HOST_ALLOWLIST = [
 ] as const;
 
 export const CREDENTIAL_HOST_ALLOWLIST = [
-  "https://api.picsart.io",
-  "https://genai-api.picsart.io",
+  AGENTS_BETA ? "https://api-staging.picsart.io" : "https://api.picsart.io",
+  AGENTS_BETA ? "https://genai-api-staging.picsart.io" : "https://genai-api.picsart.io",
   AUTH_ORIGIN,
 ] as const;
 

@@ -1,6 +1,8 @@
-export const API_KEY_NAME = "picsart_api_key"
+import { AGENTS_BETA } from "./agents";
 
-export const OAUTH_RECORD_NAME = "picsart_oauth"
+export const API_KEY_NAME = AGENTS_BETA ? "picsart_api_key_stage" : "picsart_api_key";
+
+export const OAUTH_RECORD_NAME = AGENTS_BETA ? "picsart_oauth_stage" : "picsart_oauth";
 
 export const WIDGET_WIDTH = 320;
 

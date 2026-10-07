@@ -78,6 +78,7 @@ export const loadExchangePage = (url: string): void => {
 };
 
 export const forwardFromExchangePage = (event: MessageEvent): void => {
+    if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
     if (frameOrigin && event.origin !== frameOrigin) return;
     const message = event.data as Record<string, unknown>;
 
@@ -89,6 +90,7 @@ export const forwardFromExchangePage = (event: MessageEvent): void => {
             redirectUri: message.redirectUri,
             pageOrigin: message.origin,
             secureContext: message.secureContext,
+            tokenEndpoint: message.tokenEndpoint,
         });
 
         if (first) {

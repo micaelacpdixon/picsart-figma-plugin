@@ -34,7 +34,7 @@ import {
     tokenFromBody,
     type TokenResult,
 } from "./oauthClient";
-import { exchangeViaPage, refreshViaPage } from "./exchangePage";
+import { betaExchangeReady, BETA_SIGN_IN_UNAVAILABLE, exchangeViaPage, refreshViaPage } from "./exchangePage";
 import { mintHandoff, pollHandoffOnce, type HandoffKeys } from "./relay";
 import {
     classifyInvalidGrant,
@@ -60,12 +60,17 @@ interface PendingSignIn {
     keys?: HandoffKeys;
 }
 
+class BetaSignInUnavailableError extends Error {
+    constructor() { super(BETA_SIGN_IN_UNAVAILABLE); Object.setPrototypeOf(this, BetaSignInUnavailableError.prototype); }
+}
+
 let pending: PendingSignIn | undefined;
 
 let armedFlow:
     | { verifier: string; state: string; authorizeUrl: string; keys?: HandoffKeys }
     | undefined;
 let arming = false;
+let signInGeneration = 0;
 let pollGeneration = 0;
 let state: AuthState = { status: "idle" };
 let displayName: string | undefined;
@@ -249,6 +254,7 @@ const buildFlow = async (
     pluginApi: PluginAPI,
     fetchFn?: SandboxFetchFn
 ): Promise<{ verifier: string; state: string; authorizeUrl: string; keys?: HandoffKeys }> => {
+    if (!await betaExchangeReady(pluginApi)) throw new BetaSignInUnavailableError();
     const random = randomSourceFor(pluginApi);
     const { verifier, challenge } = await createPkcePair(random);
 
@@ -278,12 +284,15 @@ export const armSignIn = async (
     if (state.status !== "idle") return;
 
     arming = true;
+    const generation = signInGeneration;
     try {
         const flow = await buildFlow(pluginApi, fetchFn);
+        if (generation !== signInGeneration) return;
         if (pending || armedFlow) return;
         armedFlow = flow;
         setState(pluginApi, { status: "armed", authorizeUrl: flow.authorizeUrl });
     } catch (error) {
+        if (generation !== signInGeneration) return;
         armedFlow = undefined;
         const noRandom = error instanceof NoSecureRandomError;
         authLog("could not arm the sign-in", { error: String(error) });
@@ -307,6 +316,7 @@ export const startSignIn = async (
     }
 
     if (!armedFlow) setState(pluginApi, { status: "starting" });
+    const generation = ++signInGeneration;
 
     try {
         const armedIsStale =
@@ -314,6 +324,7 @@ export const startSignIn = async (
         if (armedIsStale) authLog("the armed relay key pair went stale; minting another");
         const ready =
             armedFlow && !armedIsStale ? armedFlow : await buildFlow(pluginApi, fetchFn);
+        if (generation !== signInGeneration) return;
         armedFlow = undefined;
 
         pending = {
@@ -332,12 +343,13 @@ export const startSignIn = async (
 
         if (ready.keys) void runRelayPoll(pluginApi, ready.keys, ++pollGeneration, fetchFn);
     } catch (error) {
+        if (generation !== signInGeneration) return;
         const noRandom = error instanceof NoSecureRandomError;
         authLog("could not start the sign-in", { error: String(error) });
         pending = undefined;
         setState(pluginApi, {
             status: "failed",
-            reason: noRandom ? SIGN_IN_NO_RANDOM_ERR : SIGN_IN_FAILED_ERR,
+            reason: noRandom ? SIGN_IN_NO_RANDOM_ERR : error instanceof BetaSignInUnavailableError ? BETA_SIGN_IN_UNAVAILABLE : SIGN_IN_FAILED_ERR,
         });
     }
 };
@@ -515,6 +527,7 @@ export const submitAuthResponse = async (
 };
 
 export const cancelSignIn = async (pluginApi: PluginAPI): Promise<void> => {
+    signInGeneration += 1;
     const wasPending = hasPendingSignIn();
     pending = undefined;
     armedFlow = undefined;
@@ -528,6 +541,7 @@ export const signOut = async (
     pluginApi: PluginAPI,
     fetchFn?: SandboxFetchFn
 ): Promise<ActiveCredential> => {
+    signInGeneration += 1;
     pending = undefined;
     displayName = undefined;
 
@@ -567,6 +581,7 @@ export const refreshCredentialNow = async (
 };
 
 export const resetAuthSession = () => {
+    signInGeneration += 1;
     resetSessionOAuthRecords();
     pending = undefined;
     state = { status: "idle" };

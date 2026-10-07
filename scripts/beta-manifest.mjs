@@ -10,6 +10,7 @@ source.editorType = ["figma", "figjam"];
 source.menu.unshift({ name: "AI Agents", command: "AI-AGENTS" }, { separator: true });
 source.networkAccess.allowedDomains = source.networkAccess.allowedDomains.filter(host => !host.includes("fonts.google"));
 source.networkAccess.allowedDomains.push("https://api-staging.picsart.io");
+source.networkAccess.allowedDomains.push("https://genai-api-staging.picsart.io", "https://auth-stage.picsartstage2.com", "https://accounts-stage.picsartstage2.com");
 // Returned image URLs are validated separately; these are Picsart's existing media hosts.
 source.networkAccess.allowedDomains.push("https://*.picsart.com", "https://*.picsart.io");
 delete source.networkAccess.devAllowedDomains;

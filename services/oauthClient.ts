@@ -1,5 +1,6 @@
 import {
     AUTH_AUTHORIZE,
+    AUTH_BASE,
     AUTH_END_SESSION,
     AUTH_TOKEN,
     BALANACE,
@@ -12,6 +13,7 @@ import { authLog } from "./authLog";
 import { accessTokenExpiry, checkGrantedScopes, decodeAccessToken, grantedScopes } from "./grantedScope";
 import type { OAuthRecord } from "./oauthStorage";
 import { sandboxFetch, type SandboxFetchFn } from "./sandboxFetch";
+import { AGENTS_BETA } from "@constants/agents";
 
 export const isNetworkReachable = async (fetchFn?: SandboxFetchFn): Promise<boolean> => {
     const probe = await sandboxFetch(
@@ -83,6 +85,10 @@ export const tokenFromBody = (body: unknown, endpoint: string): TokenResult => {
     if (!accessToken) {
         authLog(`${endpoint} answered 200 with no access_token`, { body: parsed });
         return { ok: false, reason: "malformed" };
+    }
+
+    if (AGENTS_BETA && decodeAccessToken(accessToken)?.iss !== AUTH_BASE) {
+        return { ok: false, reason: "malformed", detail: "The sign-in returned an account from a different environment." };
     }
 
     const scopeCheck = checkGrantedScopes(accessToken);

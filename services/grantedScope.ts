@@ -2,6 +2,7 @@ import { REQUIRED_OAUTH_SCOPES } from "@constants/index";
 import { authLog } from "./authLog";
 
 export interface AccessTokenClaims {
+    iss?: unknown;
     scope?: unknown;
     exp?: unknown;
     sub?: unknown;

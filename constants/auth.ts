@@ -1,5 +1,7 @@
-export const AUTH_ORIGIN = "https://auth.picsart.com" as const;
-export const AUTH_BASE = "https://auth.picsart.com/api" as const;
+import { AGENTS_BETA } from "./agents";
+
+export const AUTH_ORIGIN = AGENTS_BETA ? "https://auth-stage.picsartstage2.com" : "https://auth.picsart.com";
+export const AUTH_BASE = `${AUTH_ORIGIN}/api` as const;
 
 export const AUTH_DISCOVERY = `${AUTH_BASE}/.well-known/openid-configuration` as const;
 export const AUTH_AUTHORIZE = `${AUTH_BASE}/oauth2/authorize` as const;
@@ -8,7 +10,7 @@ export const AUTH_JWKS = `${AUTH_BASE}/oauth2/jwks` as const;
 
 export const AUTH_END_SESSION = `${AUTH_BASE}/connect/logout` as const;
 
-export const ACCOUNTS_ORIGIN = "https://accounts.picsart.com" as const;
+export const ACCOUNTS_ORIGIN = AGENTS_BETA ? "https://accounts-stage.picsartstage2.com" : "https://accounts.picsart.com";
 
 export const OAUTH_SCOPES = ["openid", "profile", "workflows.execute"] as const;
 
@@ -20,9 +22,13 @@ export const RELAY_RESULT = `${RELAY_BASE}/result` as const;
 
 export const OAUTH_CLIENT_ID = "dcr-1e37e9dd-0f8d-4927-800b-b0eac86b62f8" as const;
 
+// Keep the registered callback. The shared relay transports one-time codes;
+// token exchange and refresh must use the same issuer as authorization.
 export const OAUTH_REDIRECT_URI = `${RELAY_BASE}/callback` as const;
 
-export const EXCHANGE_PAGE_URL = "https://api.picsart.io/v1/figma/auth.html" as const;
+export const EXCHANGE_PAGE_URL = AGENTS_BETA
+    ? "https://api-staging.picsart.io/v1/figma/auth.html"
+    : "https://api.picsart.io/v1/figma/auth.html";
 
 export const EXCHANGE_PAGE_READY_TIMEOUT_MS = 10000;
 

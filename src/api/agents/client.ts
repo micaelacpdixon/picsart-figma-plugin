@@ -75,7 +75,7 @@ export function createAgentsClient(getCredential: () => CredentialInput | undefi
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (!response.ok) throw new AgentsError(response.status === 403 ? "This account does not have access to the staff beta yet."
-      : response.status === 401 ? "Your session expired. Sign in again."
+      : response.status === 401 ? "The Agents service couldn't verify this sign-in. Try signing in again. If this continues, the staff beta connection needs attention."
       : response.status === 404 ? "The hosted Agents beta is not deployed yet."
       : `Picsart could not complete this request (${response.status}).`, response.status);
     return record(await response.json());

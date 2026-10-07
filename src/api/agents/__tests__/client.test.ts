@@ -27,6 +27,22 @@ describe("Agents account and network boundaries", () => {
     await expect(createAgentsClient(() => credential, vi.fn(), fetcher).submit("conversation", "Make something", [])).rejects.toThrow();
     expect(fetcher).toHaveBeenCalledOnce();
   });
+  it("reports a rejected fresh sign-in without calling it expired or repeating a charged request", async () => {
+    const refresh = vi.fn();
+    const fetcher = vi.fn(async () => new Response("Unauthorized", { status: 401 }));
+    await expect(createAgentsClient(() => credential, refresh, fetcher).submit("conversation", "Make something", []))
+      .rejects.toMatchObject({ status: 401, message: expect.stringContaining("couldn't verify this sign-in") });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+  it("reports known local expiry separately and does not send an expired token after refresh fails", async () => {
+    const refresh = vi.fn(async () => false);
+    const fetcher = vi.fn();
+    await expect(createAgentsClient(() => ({ ...credential, expiresAt: 1 }), refresh, fetcher).catalog())
+      .rejects.toThrow("Your session expired. Sign in again.");
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it("polls the same signed task without resubmitting a prompt", async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ response: { status: "IN_PROGRESS" } })));
     const client = createAgentsClient(() => credential, vi.fn(), fetcher);

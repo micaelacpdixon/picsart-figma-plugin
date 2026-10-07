@@ -165,11 +165,11 @@ function AgentsSession({ onSignIn, oauth, client: incomingClient }: { onSignIn: 
         <span className="agents-eyebrow">A LITTLE CREATIVE COMPANY</span>
         <h1>Big ideas.<br />Meet your team.</h1>
         <p>Find a direction, explore a new look, and bring it straight to your canvas.</p>
-        <div className="agents-onboarding-actions"><Button dataTestId="agent-signin" isFullWidth onClick={onSignIn} endIcon={IconArrowUpRight}>Sign in with Picsart</Button><small>Use your own Picsart account to get started.</small></div>
+        <div className="agents-onboarding-actions"><Button dataTestId="agent-signin" isFullWidth onClick={onSignIn} endIcon={IconArrowUpRight}>Sign in with Picsart</Button><small>Opens Picsart's account sign-in in your browser.</small></div>
         <div className="agents-feature-list"><span><IconAddPhotoOutline /> Start with your selection</span><span><IconArrowUpRight /> Bring ideas onto the canvas</span></div>
       </div> : loading ? <div className="agents-loading" role="status"><div className="agents-loading-avatars"><img src={aura} alt="" /><img src={mila} alt="" /></div><h2>Getting the team together…</h2><p>Connecting to your Picsart agents.</p></div>
         : catalogError ? <div className="agents-connection">
-          <div className="agents-account-status"><span className="agents-status-dot" />{catalogStatus === 401 ? "Sign-in needs refreshing" : "Picsart account connected"}</div>
+          <div className="agents-account-status"><span className="agents-status-dot" />{catalogStatus === 401 ? "Agents connection not verified" : "Picsart account connected"}</div>
           <img className="agents-connection-avatar" src={aura} alt="" />
           <h1>{catalogStatus === 404 ? <>Your team is<br />almost here.</> : "Let's get you connected."}</h1>
           <p className="agents-connection-error" role="alert">{catalogError}</p>

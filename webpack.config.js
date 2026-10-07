@@ -56,7 +56,7 @@ class RejectImportExpressionPlugin {
   }
 }
 
-module.exports = (__, argv) => ({
+module.exports = (env, argv) => ({
   mode: argv.mode === "production" ? "production" : "development",
   devtool: argv.mode === "production" ? false : "inline-source-map",
   entry: {
@@ -72,24 +72,19 @@ module.exports = (__, argv) => ({
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        oneOf: [
+          {
+            test: /@picsart[\\/]design-system[\\/]foundation\.css$/,
+            use: ["style-loader", "css-loader", path.resolve(__dirname, "scripts/cascade-foundation-loader.mjs")],
+          },
+          { use: ["style-loader", "css-loader"] },
+        ],
       },
       {
         test: /\.svg/,
         type: "asset/inline",
       },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/,
-        type: 'asset/resource',
-        generator: {
-          filename: 'assets/fonts/[name][ext]', 
-        },
-        parser: {
-          dataUrlCondition: {
-            maxSize: 10
-          }
-        }
-      },
+      { test: /\.(woff|woff2|eot|ttf|otf|png)$/, type: "asset/inline" },
       {
         test: /\.s[ac]ss$/i,
         use: [
@@ -139,7 +134,7 @@ module.exports = (__, argv) => ({
   output: {
     filename: "[name].js",
     clean: true,
-    path: path.join(__dirname, "dist"),
+    path: path.join(__dirname, env.agentsBeta ? "dist-beta" : "dist"),
     publicPath: '/',
   },
   // webpack's 244 KiB default is a network-delivery budget, and nothing here is
@@ -147,15 +142,16 @@ module.exports = (__, argv) => ({
   // ui.html and Figma loads that file from local disk. The check is kept rather
   // than switched off because CLAUDE.md treats a build warning as a real finding,
   // and that only holds while the build is otherwise warning-free — so the limit
-  // is set where a genuine blowup (a bundled font, an accidental dependency)
-  // still trips it.
+  // allows the four bundled Gilroy weights and two agent portraits. An
+  // accidental dependency or additional unbounded portrait set still trips it.
   performance: {
-    maxAssetSize: 400 * 1024,
-    maxEntrypointSize: 400 * 1024,
+    maxAssetSize: (env.agentsBeta ? 1280 : 600) * 1024,
+    maxEntrypointSize: (env.agentsBeta ? 1280 : 600) * 1024,
   },
   plugins: [
     new webpack.DefinePlugin({
       global: {},
+      __AGENTS_BETA__: JSON.stringify(Boolean(env.agentsBeta)),
     }),
     new HtmlWebpackPlugin({
       inject: "body",

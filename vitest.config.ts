@@ -35,6 +35,8 @@ export default defineConfig({
     // API response shapes and sandbox node handling, and neither needs a DOM.
     // A component test opts in per file with `// @vitest-environment jsdom`.
     environment: "node",
+    // Cascade imports its component CSS; let Vite process those imports in jsdom.
+    server: { deps: { inline: ["@picsart/design-system"] } },
     include: ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.tsx"],
     exclude: ["node_modules", "dist"],
     // Figma plugin code reaches for browser globals that jsdom does not
